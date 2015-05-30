@@ -118,6 +118,24 @@ namespace StorageTableTest
             Assert.IsTrue(afterInsertCount == 100, "A batch insert did not function as expected.");
         }
 
+        [TestMethod]
+        public void Insert_5K_VerifyCount()
+        {
+            for(int batch = 1; batch <= 50; batch++)
+            {
+                TableBatchOperation insertBatchOperation = new TableBatchOperation();
+
+                int insertCount = 100;
+                for (int i = 1; i <= insertCount; i++)
+                {
+                    var student = new Student(2015,Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+                    insertBatchOperation.Insert(student);
+                }
+                table.ExecuteBatch(insertBatchOperation);
+            }
+            int afterInsertCount = GetAllEntitiesInPartition("2015").Count();
+            Assert.IsTrue(afterInsertCount == 5000, "Inserting 5000 entities with a batch of 100 failed.");
+        }
         #endregion
 
         #region private methods
