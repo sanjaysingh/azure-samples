@@ -15,12 +15,15 @@ namespace storage_table
 
             Console.WriteLine("Creating table..");
             TimedAction(()=>tableFunctions.CreateTable());
+            // does not support more than 100 in a batch as of 5/29/2015
+            Console.WriteLine("Inserting 100 rows");
+            TimedAction(()=>tableFunctions.BatchInsert(100));
 
-            Console.WriteLine("Inserting 1000 rows");
-            TimedAction(()=>tableFunctions.BatchInsert(10));
+            Console.WriteLine("Inserting 1 row");
+            TimedAction(() => tableFunctions.SingleInsert());
 
-            Console.WriteLine("Performing 1000 selects..");
-            TimedAction(()=>tableFunctions.Select(10));
+            Console.WriteLine("Performing 100 selects..");
+            TimedAction(()=>tableFunctions.Select(100));
 
             Console.WriteLine("Deleting table");
             TimedAction(() => tableFunctions.DeleteTable());

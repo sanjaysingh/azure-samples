@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "storage-table", "storage-table\storage-table.csproj", "{49DBC041-9E4A-4570-BAB8-CB481CBCC7A8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StorageTableTest", "storage-table-test\StorageTableTest.csproj", "{079B4C2F-06B5-483C-80F6-FBBCA64A92C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{49DBC041-9E4A-4570-BAB8-CB481CBCC7A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{49DBC041-9E4A-4570-BAB8-CB481CBCC7A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{49DBC041-9E4A-4570-BAB8-CB481CBCC7A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{49DBC041-9E4A-4570-BAB8-CB481CBCC7A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{079B4C2F-06B5-483C-80F6-FBBCA64A92C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{079B4C2F-06B5-483C-80F6-FBBCA64A92C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{079B4C2F-06B5-483C-80F6-FBBCA64A92C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{079B4C2F-06B5-483C-80F6-FBBCA64A92C0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

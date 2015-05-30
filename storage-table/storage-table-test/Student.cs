@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace storage_table
+namespace StorageTableTest
 {
     public class Student: TableEntity
     {

@@ -15,6 +15,7 @@ namespace storage_table
 
         public void CreateTable()
         {
+            
             CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
 
             // Create the table if it doesn't exist.
@@ -46,8 +47,20 @@ namespace storage_table
             }
             // Execute the batch operation.
             table.ExecuteBatch(batchOperation);
+            
         }
 
+        public void SingleInsert()
+        {
+            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+
+            CloudTable table = tableClient.GetTableReference(TableName);
+
+            TableOperation insertOperation = TableOperation.Insert(new Student1(2015, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()));
+
+            table.Execute(insertOperation);
+
+        }
         public void Select(int count)
         {
             CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
