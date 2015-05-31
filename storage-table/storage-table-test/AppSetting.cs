@@ -9,7 +9,7 @@ namespace StorageTableTest
 {
     public static class AppSetting
     {
-        public static string StorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=;AccountKey=4giNX6aitntymyPeycVof83rziayX3Q+EPw2BdOjYEdsdr6XKmzwLTgfCgB4Ieb5P7egAp2sDJJK1zrmsldkiQ==";
+        public static string StorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=;AccountKey=+EPw2BdOjYEdsdr6XKmzwLTgfCgB4Ieb5P7egAp2sDJJK1zrmsldkiQ==";
         
     }
 }

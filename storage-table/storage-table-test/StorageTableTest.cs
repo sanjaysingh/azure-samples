@@ -140,14 +140,44 @@ namespace StorageTableTest
 
             Assert.IsTrue(afterInsertCount == 2, "Inserting multiple entity types in a table");
         }
-        
+
+        [TestMethod]
+        [ExpectedException(typeof(StorageException))]
+        public void Insert_TwoEntity_Same_key_Should_Throw()
+        {
+            var student1 = new Student(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
+            table.Execute(TableOperation.Insert(student1));
+
+            var student2 = new Student(student1.RowKey, Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
+            table.Execute(TableOperation.Insert(student2));
+            
+        }
+
+        [TestMethod]
+        public void Select_Single_Field_Compare_Value_Should_Match()
+        {
+            var student1 = new Student(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
+            table.Execute(TableOperation.Insert(student1));
+            
+            TableQuery<DynamicTableEntity> projectionQuery = new TableQuery<DynamicTableEntity>().Select(new string[] { "FirstName" });
+            
+            EntityResolver<string> resolver = (pk, rk, ts, props, etag) => props.ContainsKey("FirstName") ? props["FirstName"].StringValue : null;
+
+            var projectedFirstName = table.ExecuteQuery(projectionQuery, resolver, null, null).First();
+
+            Assert.IsTrue(projectedFirstName == student1.FirstName, "Selecting a single field did not work as expected");
+        }
+
         #endregion
 
         #region private methods
 
-        private static IEnumerable<Student> GetAllEntities()
+        private static IEnumerable<TableEntity> GetAllEntities()
         {
-            TableQuery<Student> partitionQuery = new TableQuery<Student>();
+            TableQuery<TableEntity> partitionQuery = new TableQuery<TableEntity>();
 
             return table.ExecuteQuery(partitionQuery);
         }
