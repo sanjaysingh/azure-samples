@@ -4,6 +4,8 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.WindowsAzure.Storage.RetryPolicies;
+using System.Threading;
 
 namespace StorageTableTest
 {
@@ -22,14 +24,15 @@ namespace StorageTableTest
         #region inits
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext)
+        public static void ClassInitialize(TestContext _)
         {
             storageAccount = CloudStorageAccount.Parse(AppSetting.StorageConnectionString);
             tableClient = storageAccount.CreateCloudTableClient();
+            
             table = tableClient.GetTableReference(tableName);
+
             table.CreateIfNotExists();
         }
-
         [ClassCleanup]
         public static void ClassCleanup()
         {
@@ -41,26 +44,12 @@ namespace StorageTableTest
         [TestCleanup]
         public void TestCleanup()
         {
-            var allEntities = GetAllEntitiesInPartition("2015");
-            if(allEntities.Count() > 0)
+            foreach (var entity in GetAllEntities())
             {
-                TableBatchOperation deleteBatchOperation = new TableBatchOperation();
-                foreach (var entity in allEntities)
-                {
-                    deleteBatchOperation.Delete(entity);
-                    if(deleteBatchOperation.Count >= 100)
-                    {
-                        table.ExecuteBatch(deleteBatchOperation);
-                        deleteBatchOperation.Clear();
-                    }
-                }
-                if (deleteBatchOperation.Count >= 1)
-                {
-                    table.ExecuteBatch(deleteBatchOperation);
-                    deleteBatchOperation.Clear();
-                }
+                table.Execute(TableOperation.Delete(entity));
             }
         }
+
         #endregion
 
         #region tests
@@ -68,12 +57,12 @@ namespace StorageTableTest
         [TestMethod]
         public void Insert_One_Entity_Verify_Count()
         {
-            var student = new Student(2015, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+            var student = new Student(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
             var insertOperation = TableOperation.Insert(student);
 
             table.Execute(insertOperation);
 
-            int afterInsertCount = GetAllEntitiesInPartition("2015").Count();
+            int afterInsertCount = GetAllEntitiesInPartition(Student.EntityPartitionKey).Count();
             
             Assert.IsTrue(afterInsertCount == 1, "A single entity insert did not function as expected.");
         }
@@ -81,7 +70,7 @@ namespace StorageTableTest
         [TestMethod]
         public void Update_One_Entity_Verify_NewValue()
         {
-            var student = new Student(2015, Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+            var student = new Student(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
             var insertOperation = TableOperation.Insert(student);
 
             table.Execute(insertOperation);
@@ -107,38 +96,61 @@ namespace StorageTableTest
             int insertCount = 100;
             for (int i = 1; i <= insertCount; i++)
             {
-                var student = new Student(2015, i.ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+                var student = new Student(i.ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
                 student.ETag = "*";
                 insertBatchOperation.Insert(student);
             }
             
             table.ExecuteBatch(insertBatchOperation);
-            int afterInsertCount = GetAllEntitiesInPartition("2015").Count();
+            int afterInsertCount = GetAllEntitiesInPartition(Student.EntityPartitionKey).Count();
             
             Assert.IsTrue(afterInsertCount == 100, "A batch insert did not function as expected.");
         }
 
         [TestMethod]
-        public void Insert_5K_VerifyCount()
+        public void Insert_Thousand_VerifyCount()
         {
-            for(int batch = 1; batch <= 50; batch++)
+            for(int batch = 1; batch <= 10; batch++)
             {
                 TableBatchOperation insertBatchOperation = new TableBatchOperation();
 
                 int insertCount = 100;
                 for (int i = 1; i <= insertCount; i++)
                 {
-                    var student = new Student(2015,Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+                    var student = new Student(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
                     insertBatchOperation.Insert(student);
                 }
                 table.ExecuteBatch(insertBatchOperation);
             }
-            int afterInsertCount = GetAllEntitiesInPartition("2015").Count();
-            Assert.IsTrue(afterInsertCount == 5000, "Inserting 5000 entities with a batch of 100 failed.");
+            int afterInsertCount = GetAllEntitiesInPartition(Student.EntityPartitionKey).Count();
+            Assert.IsTrue(afterInsertCount == 1000, "Inserting 1000 entities with a batch of 100 failed.");
         }
+
+        [TestMethod]
+        public void Insert_TwoEntityType_Verify_Added()
+        {
+            var student = new Student(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+            
+            table.Execute(TableOperation.Insert(student));
+
+            var teacher = new Teacher(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+            table.Execute(TableOperation.Insert(teacher));
+            
+            int afterInsertCount = GetAllEntities().Count();
+
+            Assert.IsTrue(afterInsertCount == 2, "Inserting multiple entity types in a table");
+        }
+        
         #endregion
 
         #region private methods
+
+        private static IEnumerable<Student> GetAllEntities()
+        {
+            TableQuery<Student> partitionQuery = new TableQuery<Student>();
+
+            return table.ExecuteQuery(partitionQuery);
+        }
 
         private static IEnumerable<Student> GetAllEntitiesInPartition(string partition)
         {

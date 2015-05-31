@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 
 namespace StorageTableTest
 {
-    public class Student: TableEntity
+    public class Teacher: TableEntity
     {
-        public const string EntityPartitionKey = "Student";
-        public Student(string id, string firstName, string lastName)
+        public const string EntityPartitionKey = "Teacher";
+
+        public Teacher(string id, string firstName, string lastName)
         {
             this.PartitionKey = EntityPartitionKey;
             this.RowKey = id;
@@ -18,11 +19,15 @@ namespace StorageTableTest
             this.LastName = lastName;
         }
 
-        public Student() { }
+        public Teacher() { }
 
         public string FirstName { get; set; }
 
         public string LastName { get; set; }
+
+        public int Salary { get; set; }
+
+        public int Experience { get; set; }
     }
     
 }
