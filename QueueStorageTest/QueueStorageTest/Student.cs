@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace QueueStorageTest
+namespace QueueStorageTest 
 {
-    public class Student
+    public class Student 
     {
         
         public Student(string id, string firstName, string lastName)
