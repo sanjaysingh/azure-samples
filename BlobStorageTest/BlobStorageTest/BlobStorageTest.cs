@@ -252,6 +252,22 @@ namespace BlobStorageTest
             Assert.IsTrue(readContent == writtenContent, "Read blob text is not same as what was written using stream.");
         }
 
+        [TestMethod]
+        public void Upload_Page_Blob_Verify_Content()
+        {
+            CloudPageBlob pageBlob = container.GetPageBlobReference(BlobName);
+            int totalBytes = 2 * 512; // 2 pages, data size has to be in multiple of 512 for it to work with page blobs
+            byte[] data = new byte[totalBytes];
+            for(int i = 0; i < totalBytes; i++)
+            {
+                data[i] = 5;
+            }
+            pageBlob.UploadFromByteArray(data, 0, totalBytes);
+            byte[] readdata = new byte[totalBytes];
+            pageBlob.DownloadToByteArray(readdata, 0);
+            
+            Assert.IsTrue(Enumerable.SequenceEqual(data,readdata), "Page blob downloaded content does not match what was uploaded.");
+        }
 
         #endregion
 
@@ -292,6 +308,17 @@ namespace BlobStorageTest
                 }
             }
             return fileName;
+        }
+
+        private string GetResourceFileContent()
+        {
+            using (var fileStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceFileName))
+            {
+                using (StreamReader reader = new StreamReader(fileStream, Encoding.UTF8))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
         }
         #endregion
     }
