@@ -8,6 +8,8 @@ using System.Text;
 using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace BlobStorageTest
 {
@@ -18,9 +20,10 @@ namespace BlobStorageTest
         static CloudStorageAccount storageAccount;
         static CloudBlobClient blobClient;
         static CloudBlobContainer container;
-        const string BlobName = "myblob";
+        
         const string ContainerName = "mycontainer";
         const string ResourceFileName = "BlobStorageTest.SampleDataFile.txt";
+        
 
         #endregion
 
@@ -44,6 +47,17 @@ namespace BlobStorageTest
                 container.Delete();
             }
         }
+        [TestInitialize]
+        public void TestInitialize()
+        {
+           
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            
+        }
 
         #endregion
 
@@ -52,7 +66,8 @@ namespace BlobStorageTest
         [TestMethod]
         public void Upload_Three_Blocks_Undo_One_Verify_Content()
         {
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName);
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
+            
             string block1Id = GetBase64String("block1");
             var block1Data = Encoding.UTF8.GetBytes("First block of data");
             blockBlob.PutBlock(block1Id, new MemoryStream(block1Data), GetMD5Hash(block1Data));
@@ -74,80 +89,99 @@ namespace BlobStorageTest
         [TestMethod]
         public void Upload_Multiple_Blobs_VerifyCount()
         {
+            int prevBlobsCount = container.ListBlobs(useFlatBlobListing: true).Count();
             int uploadBlobsCount = 5;
-            for(int i = 0; i < uploadBlobsCount; i++)
+            for (int i = 0; i < uploadBlobsCount; i++)
             {
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName+i.ToString());
+                CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
                 blockBlob.UploadText(i.ToString());
+
             }
 
-            int blobCountInContainer = container.ListBlobs(null, true).Count();
+            int newBlobCountInContainer = container.ListBlobs(null, true).Count()- prevBlobsCount;
 
-            Assert.IsTrue(blobCountInContainer == uploadBlobsCount, "Number of blobs uploaded does not match count of blobs in the container.");
+            Assert.IsTrue(newBlobCountInContainer == uploadBlobsCount, "Number of blobs uploaded does not match count of blobs in the container.");
         }
 
         [TestMethod]
         public void Upload_Multiple_Blobs_Select_By_Name_Ensure_Count()
         {
             int uploadBlobsCount = 5;
+            string blobName = string.Empty;
             for (int i = 0; i < uploadBlobsCount; i++)
             {
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName + i.ToString());
+                CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
                 blockBlob.UploadText(i.ToString());
+                if (string.IsNullOrEmpty(blobName))
+                {
+                    blobName = blockBlob.Name;
+                }
+                
             }
 
-            int blobCountWithGivenUniqueName = container.ListBlobs(BlobName+"2", true).Count();
+            int blobCountWithGivenUniqueName = container.ListBlobs(blobName, true).Count();
 
             Assert.IsTrue(blobCountWithGivenUniqueName == 1, "Blob with given unique name was not found.");
         }
         [TestMethod]
         public void Upload_Blobs_Nested_Directory_Verify_Count()
         {
-            var outerBlob = container.GetBlockBlobReference(BlobName);
-            outerBlob.UploadText("This is a sample text blob");
+            int prevOuterEntries = container.ListBlobs().Count();
+            int prevBlobsCount = container.ListBlobs(useFlatBlobListing: true).Count();
 
+            var outerBlob = container.GetBlockBlobReference(GetUniqueBlobName());
+            outerBlob.UploadText("This is a sample text blob");
+           
             /// Directory is a vitual thing in the container. There is no corresponding thing in the Resource APIs.
-            var firstDirectory = container.GetDirectoryReference("first");
-            var firstInnerBlob = firstDirectory.GetBlockBlobReference(BlobName);
-            var secondInnerBlob = firstDirectory.GetBlockBlobReference(BlobName+"1");
+            var firstDirectory = container.GetDirectoryReference(GetUniqueBlobName());
+            var firstInnerBlob = firstDirectory.GetBlockBlobReference("Blob1");
+            var secondInnerBlob = firstDirectory.GetBlockBlobReference("Blob2");
             firstInnerBlob.UploadText("This is a first sample text blob in a directory");
             secondInnerBlob.UploadText("This is a second sample text blob in a directory");
+            
+            var newEntriesCount = container.ListBlobs().Count() - prevOuterEntries;
+            var newBlobsCount = container.ListBlobs(useFlatBlobListing: true).Count()- prevBlobsCount;
 
-            var entries = container.ListBlobs().ToList();
-            var blobs = container.ListBlobs(useFlatBlobListing: true).ToList();
-
-            Assert.IsTrue(entries.Count == 2 && blobs.Count == 3, "Directory structure in the blob container is not correctly build when directory was built specifically.");
+            Assert.IsTrue(newEntriesCount == 2 && newBlobsCount == 3, "Directory structure in the blob container is not correctly build when directory was built specifically.");
         }
 
         [TestMethod]
         public void Upload_Blobs_Nested_Directory_In_Name_Verify_Count()
         {
-            var outerBlob = container.GetBlockBlobReference(BlobName);
+            int prevOuterEntries = container.ListBlobs().Count();
+            int prevBlobsCount = container.ListBlobs(useFlatBlobListing: true).Count();
+
+            var outerBlob = container.GetBlockBlobReference(GetUniqueBlobName());
             outerBlob.UploadText("This is a sample text blob");
-            
-            var firstInnerBlob = container.GetBlockBlobReference("first/blob1");
-            var secondInnerBlob = container.GetBlockBlobReference("first/blob2");
+
+            string secondBlob = GetUniqueBlobName();
+            var firstInnerBlob = container.GetBlockBlobReference(secondBlob + "/blob1");
+            var secondInnerBlob = container.GetBlockBlobReference(secondBlob+ "/blob2");
             firstInnerBlob.UploadText("This is a first sample text blob in a directory");
             secondInnerBlob.UploadText("This is a second sample text blob in a directory");
 
-            var entries = container.ListBlobs().ToList();
-            var blobs = container.ListBlobs(useFlatBlobListing: true).ToList();
-
-            Assert.IsTrue(entries.Count == 2 && blobs.Count == 3, "Directory structure in the blob container is not correctly build when blob is uploaded with directory structure in name.");
+            var newEntriesCount = container.ListBlobs().Count()-prevOuterEntries;
+            var newBlobsCount = container.ListBlobs(useFlatBlobListing: true).Count()-prevBlobsCount;
+            
+            Assert.IsTrue(newEntriesCount == 2 && newBlobsCount == 3, "Directory structure in the blob container is not correctly build when blob is uploaded with directory structure in name.");
         }
 
         [TestMethod]
         public void Upload_Multiple_Blobs_Select_Blobs_In_Pages_Verify_Count()
         {
             int uploadBlobsCount = 50;
+            string blobName = string.Empty;
             for (int i = 0; i < uploadBlobsCount; i++)
             {
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName + i.ToString());
+                CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
                 blockBlob.UploadText(i.ToString());
+                if (string.IsNullOrEmpty(blobName))
+                {
+                    blobName = blockBlob.Name;
+                }
+
             }
-
-            int blobCountWithGivenUniqueName = container.ListBlobs(BlobName + "2", true).Count();
-
+            int totalBlobsCount = container.ListBlobs(useFlatBlobListing: true).Count();
             BlobContinuationToken continuationToken = null;
             BlobResultSegment resultSegment = null;
             int selectCount = 0;
@@ -162,17 +196,17 @@ namespace BlobStorageTest
                 continuationToken = resultSegment.ContinuationToken;
             }
             while (continuationToken != null);
-            Assert.IsTrue(selectCount == uploadBlobsCount, "Segemented listing of blobs did not return all blobs.");
-        }
+            Assert.IsTrue(selectCount == totalBlobsCount, "Segemented listing of blobs did not return all blobs.");
+        } 
 
         [TestMethod]
         public void Upload_LargeFileStream_ToBlockBlob_VerifySize()
         {
             // Retrieve reference to a blob named "myblob".
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName);
-
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
+            
             string writtenContent = string.Empty;
-            string fileToUpload = CreateLargeFile(20);
+            string fileToUpload = CreateLargeFile(5);
             
             BlobRequestOptions bro = new BlobRequestOptions()
             {
@@ -196,8 +230,8 @@ namespace BlobStorageTest
         public void Upload_Text_ToBlockBlob_VerifyUploadedContent()
         {
             // Retrieve reference to a blob named "myblob".
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName);
-
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
+            
             string writtenContent = string.Empty;
             using (var fileStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceFileName))
             {
@@ -218,8 +252,8 @@ namespace BlobStorageTest
         public void Upload_Stream_ToBlockBlob_VerifyUploadedContent()
         {
             // Retrieve reference to a blob named "myblob".
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(BlobName);
-
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(GetUniqueBlobName());
+            
             string writtenContent = string.Empty;
             using (var fileStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceFileName))
             {
@@ -255,7 +289,8 @@ namespace BlobStorageTest
         [TestMethod]
         public void Upload_Page_Blob_Verify_Content()
         {
-            CloudPageBlob pageBlob = container.GetPageBlobReference(BlobName);
+            CloudPageBlob pageBlob = container.GetPageBlobReference(GetUniqueBlobName());
+            
             int totalBytes = 2 * 512; // 2 pages, data size has to be in multiple of 512 for it to work with page blobs
             byte[] data = new byte[totalBytes];
             for(int i = 0; i < totalBytes; i++)
@@ -273,6 +308,10 @@ namespace BlobStorageTest
 
         #region private methods
 
+        private string GetUniqueBlobName()
+        {
+            return Guid.NewGuid().ToString();
+        }
         private string GetBase64String(byte[] data)
         {
             return Convert.ToBase64String(data);
