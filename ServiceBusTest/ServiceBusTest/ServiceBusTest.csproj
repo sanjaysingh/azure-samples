@@ -62,8 +62,9 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AppSetting.cs" />
-    <Compile Include="SeerviceBusQueueTest.cs" />
+    <Compile Include="ServiceBusQueueTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServiceBusTopicTests.cs" />
     <Compile Include="Student.cs" />
   </ItemGroup>
   <ItemGroup>

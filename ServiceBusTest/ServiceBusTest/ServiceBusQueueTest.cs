@@ -9,11 +9,15 @@ using System.Threading;
 namespace ServiceBusTest
 {
     [TestClass]
-    public class SeerviceBusQueueTest
+    public class ServiceBusQueueTest
     {
+        #region private fields
+
         private QueueDescription testQueue;
         private static NamespaceManager namespaceManager;
         private QueueClient queueClient;
+
+        #endregion
 
         #region initializers
 
@@ -42,6 +46,8 @@ namespace ServiceBusTest
         }
 
         #endregion
+
+        #region tests
 
         [TestMethod]
         public void Send_String_Message_Verify_Content()
@@ -221,6 +227,8 @@ namespace ServiceBusTest
 
             Assert.IsTrue(session1DataReceived && session2DataReceived && session3DataReceived, "When sending interleaved data on session queue, data is not correctly received in OnMessage handlers.");
         }
+
+        #endregion
 
     }
 }
