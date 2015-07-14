@@ -8,6 +8,8 @@ namespace ServiceBusTest
 {
     public static class AppSetting
     {
-        public static string ServiceBusConnectionString = "";
+        public const string Namespace = "";
+        public const string RootAccessKey = "";
+        public static readonly string ServiceBusConnectionString = $"Endpoint=sb://{AppSetting.Namespace}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={AppSetting.RootAccessKey}";
     }
 }
