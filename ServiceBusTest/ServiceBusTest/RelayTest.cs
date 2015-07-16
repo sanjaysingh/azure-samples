@@ -46,6 +46,8 @@ namespace ServiceBusTest
         }
     }
 
+    #region service classes
+
     [ServiceContract]
     interface IService
     {
@@ -63,4 +65,7 @@ namespace ServiceBusTest
             return "This is sample message from service.";
         }
     }
+
+    #endregion
+
 }
