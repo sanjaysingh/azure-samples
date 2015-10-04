@@ -40,6 +40,7 @@ namespace EventHubTest
         public void TestCleanup()
         {
             namespaceManager.DeleteEventHub(eventHub.Path);
+            client.Close();
         }
 
         [TestMethod]
@@ -61,13 +62,13 @@ namespace EventHubTest
         public void Send_Multiple_Evenets_One_Consumer_Ensure_All_Events_From_A_Source_In_Order()
         {
             Random random = new Random();
-            int numberOfMessages = 1000;
-            int numberOfDevices = 50;
+            int numberOfDevices = 5;
             List<Task> senderTasks = new List<Task>();
 
             Dictionary<string, List<int>> sentTemperatures = new Dictionary<string, List<int>>();
+            
             // send messages
-            for (int i = 0; i < numberOfMessages; ++i)
+            for (int i = 0; i < DeviceEventProcessor.NumberOfMessages; ++i)
             {
                 MetricEvent info = new MetricEvent() { DeviceId = random.Next(numberOfDevices), Temperature = random.Next(100) };
                 var serializedString = JsonConvert.SerializeObject(info);
@@ -83,6 +84,32 @@ namespace EventHubTest
             var defaultConsumerGroup = client.GetDefaultConsumerGroup();
             var eventProcessorHost = new EventProcessorHost("singleworker", client.Path, defaultConsumerGroup.GroupName, AppSetting.ServiceBusConnectionString, AppSetting.StorageConnectionString);
             eventProcessorHost.RegisterEventProcessorAsync<DeviceEventProcessor>().Wait();
+
+            Task.WaitAll(senderTasks.ToArray());
+            
+            DeviceEventProcessor.WaitEvent.WaitOne();
+
+            eventProcessorHost.UnregisterEventProcessorAsync();
+            bool allDataNotReceivedInCorrectOrder = false;
+            foreach(var partition in sentTemperatures)
+            {
+                if (!DeviceEventProcessor.map.ContainsKey(partition.Key))
+                {
+                    allDataNotReceivedInCorrectOrder = true; break;
+                }
+                foreach(var sendTemp in partition.Value)
+                {
+                    foreach(var receivedTemp in DeviceEventProcessor.map[partition.Key])
+                    {
+                        if(sendTemp != receivedTemp)
+                        {
+                            allDataNotReceivedInCorrectOrder = true; break;
+                        }
+                    }
+                }
+            }
+
+            Assert.IsFalse(allDataNotReceivedInCorrectOrder, "Data received is not same as data sent.");
         }
 
     }

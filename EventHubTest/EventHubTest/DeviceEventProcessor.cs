@@ -4,18 +4,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventHubTest
 {
     public class DeviceEventProcessor : IEventProcessor
     {
-        IDictionary<string, List<int>> map;
+        public static IDictionary<string, List<int>> map = new Dictionary<string, List<int>>();
         PartitionContext partitionContext;
-        
+        public static ManualResetEvent WaitEvent = new ManualResetEvent(false);
+        public const int NumberOfMessages = 5;
+        private static int numberOfMessagesReceived = 0;
+
         public DeviceEventProcessor()
         {
-            this.map = new Dictionary<string, List<int>>();
+           
         }
 
         public Task OpenAsync(PartitionContext context)
@@ -33,15 +37,22 @@ namespace EventHubTest
                 string key = eventData.PartitionKey;
 
                 // Name of device generating the event acts as hash key to retrieve average computed for it so far
-                if (!this.map.TryGetValue(key, out data))
+                if (!map.TryGetValue(key, out data))
                 {
                     // If this is the first time we got data for this device then generate new state
-                    this.map.Add(key, new List<int>());
+                    map.Add(key, new List<int>());
                 }
 
                 // Update data
-                this.map[key].Add(newData.Temperature);
-                await context.CheckpointAsync();
+                map[key].Add(newData.Temperature);
+                numberOfMessagesReceived++;
+                
+                //await context.CheckpointAsync();
+
+                if(numberOfMessagesReceived == NumberOfMessages)
+                {
+                    WaitEvent.Set();
+                }
             }
             
         }
